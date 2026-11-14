@@ -393,7 +393,7 @@ local DRIP_SPECS = {
     {x = 0.74, y = 0.622, w = 0.019, baseH = 0.068, dropColor = COLOR_ROJO,    side = 1}
 }
 
--- Desgarro de contención de energía (se abre progresivamente de arriba abajo)
+-- Fragmentos de ruptura que se separan progresivamente de arriba abajo
 local TEAR_SEGMENTS = {
     {x = 0.550, y = 0.195, w = 0.018, h = 0.088, rot = 16,  step = 1, glow = COLOR_CELESTE},
     {x = 0.534, y = 0.268, w = 0.024, h = 0.095, rot = -20, step = 2, glow = COLOR_VIOLETA},
@@ -401,14 +401,6 @@ local TEAR_SEGMENTS = {
     {x = 0.536, y = 0.424, w = 0.026, h = 0.102, rot = -22, step = 4, glow = COLOR_ROJO},
     {x = 0.564, y = 0.502, w = 0.022, h = 0.095, rot = 18,  step = 5, glow = COLOR_VIOLETA},
     {x = 0.546, y = 0.576, w = 0.016, h = 0.082, rot = -15, step = 6, glow = COLOR_CELESTE}
-}
-
--- Filamentos de voltaje que saltan entre ambas mitades al abrirse el escudo
-local ARC_BRIDGES = {
-    {x = 0.544, y = 0.245, w = 0.075, rot = -12, step = 2},
-    {x = 0.552, y = 0.335, w = 0.098, rot = 15,  step = 3},
-    {x = 0.546, y = 0.425, w = 0.092, rot = -14, step = 4},
-    {x = 0.554, y = 0.515, w = 0.074, rot = 11,  step = 5}
 }
 
 local function resetBubbleGeometry(cloudRoot)
@@ -467,7 +459,7 @@ local function resetBubbleGeometry(cloudRoot)
 
     local headerSig = cloudRoot:FindFirstChild("HeaderSignature")
     if headerSig then
-        headerSig.Position = UDim2.new(0.535, 0, 0.145, 0)
+        headerSig.Position = UDim2.new(0.54, 0, 0.145, 0)
         headerSig.Rotation = -3
     end
 
@@ -936,27 +928,27 @@ local function getBillboard(char)
         Instance.new("UICorner", orbInner).CornerRadius = UDim.new(1, 0)
     end
 
-    -- 5. FIRMA HOLOGRÁFICA SPIDER-VERSE CON ESTRELLA NEÓN Y RAYO CÓSMICO
+    -- 5. FIRMA HOLOGRÁFICA SPIDER-VERSE CON ESTRELLA NEÓN GRANDE Y RAYO CÓSMICO DE ALTO CONTRASTE
     local headerSig = Instance.new("Frame")
     headerSig.Name = "HeaderSignature"
     headerSig.AnchorPoint = Vector2.new(0.5, 0.5)
-    headerSig.Position = UDim2.new(0.535, 0, 0.145, 0)
-    headerSig.Size = UDim2.new(0.58, 0, 0.145, 0)
+    headerSig.Position = UDim2.new(0.54, 0, 0.145, 0)
+    headerSig.Size = UDim2.new(0.60, 0, 0.155, 0)
     headerSig.Rotation = -3
     headerSig.BackgroundTransparency = 1
     headerSig.ZIndex = 14
     headerSig.Parent = cloudRoot
 
-    -- Estrella Neón brillante a la izquierda del nombre (1000331975-Photoroom.png)
+    -- Estrella Neón más grande a la izquierda del nombre
     local starEmblem = Instance.new("ImageLabel")
     starEmblem.Name = "StarEmblem"
     starEmblem.AnchorPoint = Vector2.new(0.5, 0.5)
-    starEmblem.Position = UDim2.new(0.105, 0, 0.45, 0)
-    starEmblem.Size = UDim2.new(0.185, 0, 0.96, 0)
+    starEmblem.Position = UDim2.new(0.115, 0, 0.44, 0)
+    starEmblem.Size = UDim2.new(0.245, 0, 1.32, 0)
     starEmblem.BackgroundTransparency = 1
     starEmblem.Image = ""
     starEmblem.ScaleType = Enum.ScaleType.Fit
-    starEmblem.ZIndex = 16
+    starEmblem.ZIndex = 17
     starEmblem.Parent = headerSig
     applySafeWebImage(starEmblem, STAR_EMBLEM_URL, "omega_spidey_star_v1.png")
 
@@ -964,8 +956,8 @@ local function getBillboard(char)
     local nameTextGroup = Instance.new("Frame")
     nameTextGroup.Name = "NameTextGroup"
     nameTextGroup.AnchorPoint = Vector2.new(0, 0.5)
-    nameTextGroup.Position = UDim2.new(0.21, 0, 0.42, 0)
-    nameTextGroup.Size = UDim2.new(0.77, 0, 0.76, 0)
+    nameTextGroup.Position = UDim2.new(0.245, 0, 0.40, 0)
+    nameTextGroup.Size = UDim2.new(0.735, 0, 0.74, 0)
     nameTextGroup.BackgroundTransparency = 1
     nameTextGroup.ZIndex = 15
     nameTextGroup.Parent = headerSig
@@ -1023,12 +1015,33 @@ local function getBillboard(char)
     headerStroke.Color = Color3.fromRGB(10, 20, 46)
     headerStroke.Thickness = 2.2
 
-    -- Rayo de energía con destello estelar y nebulosa cósmica (1000331978-Photoroom.png)
+    -- Aura oscura sutil detrás del rayo para evitar que se camufle con el fondo del globo
+    local beamBacking = Instance.new("Frame")
+    beamBacking.Name = "BeamBacking"
+    beamBacking.AnchorPoint = Vector2.new(0, 0.5)
+    beamBacking.Position = UDim2.new(0.235, 0, 0.88, 0)
+    beamBacking.Size = UDim2.new(0.745, 0, 0.26, 0)
+    beamBacking.BackgroundColor3 = Color3.fromRGB(6, 12, 28)
+    beamBacking.BackgroundTransparency = 0.35
+    beamBacking.BorderSizePixel = 0
+    beamBacking.ZIndex = 14
+    beamBacking.Parent = headerSig
+    Instance.new("UICorner", beamBacking).CornerRadius = UDim.new(1, 0)
+
+    local beamBackGrad = Instance.new("UIGradient", beamBacking)
+    beamBackGrad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0.00, 1.00),
+        NumberSequenceKeypoint.new(0.12, 0.25),
+        NumberSequenceKeypoint.new(0.86, 0.20),
+        NumberSequenceKeypoint.new(1.00, 1.00)
+    })
+
+    -- Rayo de energía con destello estelar y nebulosa cósmica (alineado sin sobresalir)
     local underlineBeam = Instance.new("ImageLabel")
     underlineBeam.Name = "UnderlineBeam"
     underlineBeam.AnchorPoint = Vector2.new(0, 0.5)
-    underlineBeam.Position = UDim2.new(0.165, 0, 0.88, 0)
-    underlineBeam.Size = UDim2.new(0.88, 0, 0.62, 0)
+    underlineBeam.Position = UDim2.new(0.235, 0, 0.88, 0)
+    underlineBeam.Size = UDim2.new(0.745, 0, 0.78, 0)
     underlineBeam.BackgroundTransparency = 1
     underlineBeam.Image = ""
     underlineBeam.ScaleType = Enum.ScaleType.Stretch
@@ -1036,26 +1049,37 @@ local function getBillboard(char)
     underlineBeam.Parent = headerSig
     applySafeWebImage(underlineBeam, ENERGY_BEAM_URL, "omega_spidey_beam_v1.png")
 
+    -- Segunda capa luminosa superpuesta para que el rayo y la nebulosa resalten con nitidez
+    local underlineBeamCore = Instance.new("ImageLabel")
+    underlineBeamCore.Name = "UnderlineBeamCore"
+    underlineBeamCore.Size = UDim2.new(1, 0, 1, 0)
+    underlineBeamCore.BackgroundTransparency = 1
+    underlineBeamCore.Image = ""
+    underlineBeamCore.ScaleType = Enum.ScaleType.Stretch
+    underlineBeamCore.ZIndex = 16
+    underlineBeamCore.Parent = underlineBeam
+    applySafeWebImage(underlineBeamCore, ENERGY_BEAM_URL, "omega_spidey_beam_v1.png")
+
     -- Gradiente de iluminación que recorre y enciende el rayo y la nebulosa
-    local beamIllumGrad = Instance.new("UIGradient", underlineBeam)
+    local beamIllumGrad = Instance.new("UIGradient", underlineBeamCore)
     beamIllumGrad.Name = "BeamIllumGrad"
     beamIllumGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(165, 235, 255)),
-        ColorSequenceKeypoint.new(0.35, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(0.65, Color3.fromRGB(195, 245, 255)),
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(220, 190, 255))
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(205, 245, 255)),
+        ColorSequenceKeypoint.new(0.45, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.75, Color3.fromRGB(230, 250, 255)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(235, 210, 255))
     })
     beamIllumGrad.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0.00, 0.28),
-        NumberSequenceKeypoint.new(0.35, 0.08),
+        NumberSequenceKeypoint.new(0.00, 0.18),
+        NumberSequenceKeypoint.new(0.35, 0.00),
         NumberSequenceKeypoint.new(0.50, 0.00),
-        NumberSequenceKeypoint.new(0.65, 0.08),
-        NumberSequenceKeypoint.new(1.00, 0.24)
+        NumberSequenceKeypoint.new(0.65, 0.00),
+        NumberSequenceKeypoint.new(1.00, 0.15)
     })
 
     applyInnerColorToLayer(innerLayer)
 
-    -- 6. CAPA DE DESGARRO PROGRESIVO DE ENERGÍA (PARA "im okay im okay")
+    -- 6. CAPA DE RUPTURA QUE SE SEPARA PROGRESIVAMENTE (SIN LÍNEAS EXTRA)
     local breachLayer = Instance.new("Frame")
     breachLayer.Name = "EnergyBreachLayer"
     breachLayer.Size = UDim2.new(1, 0, 1, 0)
@@ -1111,33 +1135,6 @@ local function getBillboard(char)
         tStroke.Color = seg.glow
         tStroke.Thickness = 1.8
         tStroke.Transparency = 1
-
-        local coreFilament = Instance.new("Frame")
-        coreFilament.Name = "CoreFilament"
-        coreFilament.AnchorPoint = Vector2.new(0.5, 0.5)
-        coreFilament.Position = UDim2.new(0.5, 0, 0.5, 0)
-        coreFilament.Size = UDim2.new(0.32, 0, 0.85, 0)
-        coreFilament.BackgroundColor3 = Color3.fromRGB(235, 252, 255)
-        coreFilament.BackgroundTransparency = 1
-        coreFilament.BorderSizePixel = 0
-        coreFilament.ZIndex = 13
-        coreFilament.Parent = tearSeg
-        Instance.new("UICorner", coreFilament).CornerRadius = UDim.new(1, 0)
-    end
-
-    for idx, arc in ipairs(ARC_BRIDGES) do
-        local arcLine = Instance.new("Frame")
-        arcLine.Name = "ArcBridge_" .. idx
-        arcLine.AnchorPoint = Vector2.new(0.5, 0.5)
-        arcLine.Position = UDim2.new(arc.x, 0, arc.y, 0)
-        arcLine.Size = UDim2.new(0, 0, 0.005, 0)
-        arcLine.Rotation = arc.rot
-        arcLine.BackgroundColor3 = (idx % 2 == 0) and COLOR_VIOLETA or COLOR_CELESTE
-        arcLine.BackgroundTransparency = 1
-        arcLine.BorderSizePixel = 0
-        arcLine.ZIndex = 13
-        arcLine.Parent = breachLayer
-        Instance.new("UICorner", arcLine).CornerRadius = UDim.new(1, 0)
     end
 
     -- 7. ZONA SEGURA DE TEXTO + ONDAS DE MÚSICA ANIMADAS
@@ -1306,17 +1303,7 @@ local function startProgressiveEnergyBreach(cloudRoot, sessionId, char)
             tearSeg.Size = UDim2.new(0, 0, 0, 0)
             tearSeg.BackgroundTransparency = 1
             local tStroke = tearSeg:FindFirstChild("TearStroke")
-            local coreFil = tearSeg:FindFirstChild("CoreFilament")
             if tStroke then tStroke.Transparency = 1 end
-            if coreFil then coreFil.BackgroundTransparency = 1 end
-        end
-    end
-
-    for idx = 1, #ARC_BRIDGES do
-        local arcLine = breachLayer:FindFirstChild("ArcBridge_" .. idx)
-        if arcLine then
-            arcLine.Size = UDim2.new(0, 0, 0.005, 0)
-            arcLine.BackgroundTransparency = 1
         end
     end
 
@@ -1356,36 +1343,15 @@ local function startProgressiveEnergyBreach(cloudRoot, sessionId, char)
                 if char and char:GetAttribute("VoiceSession") ~= sessionId then return end
 
                 local tStroke = tearSeg:FindFirstChild("TearStroke")
-                local coreFil = tearSeg:FindFirstChild("CoreFilament")
 
                 tearSeg.BackgroundTransparency = 0.14
                 if tStroke then tStroke.Transparency = 0.05 end
-                if coreFil then
-                    coreFil.BackgroundTransparency = 0.05
-                    TweenService:Create(coreFil, TweenInfo.new(0.32), {BackgroundTransparency = 0.72}):Play()
-                end
 
                 TweenService:Create(tearSeg, TweenInfo.new(0.24, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                     Size = UDim2.new(seg.w, 0, seg.h, 0)
                 }):Play()
 
                 spawnPlasmaLeakDrop(breachLayer, seg.x, seg.y)
-            end)
-        end
-    end
-
-    for idx, arc in ipairs(ARC_BRIDGES) do
-        local arcLine = breachLayer:FindFirstChild("ArcBridge_" .. idx)
-        if arcLine then
-            local arcDelay = 0.52 + (idx - 1) * 0.10
-            task.delay(arcDelay, function()
-                if not arcLine or not arcLine.Parent then return end
-                if char and char:GetAttribute("VoiceSession") ~= sessionId then return end
-
-                arcLine.BackgroundTransparency = 0.12
-                TweenService:Create(arcLine, TweenInfo.new(0.20, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                    Size = UDim2.new(arc.w, 0, 0.006, 0)
-                }):Play()
             end)
         end
     end
@@ -1407,7 +1373,7 @@ local function startCaptionEffectsLoop(char, sessionId, vfxType, isSong, isSadDe
 
             local elapsed = tick() - startTime
 
-            -- 1. Animación de la Estrella Neón y del Rayo de Energía Cósmico
+            -- 1. Animación de la Estrella Neón Grande y del Rayo de Energía Cósmico
             local headerSig = cloudRoot:FindFirstChild("HeaderSignature")
             local starEmblem = headerSig and headerSig:FindFirstChild("StarEmblem")
             local nameTextGroup = headerSig and headerSig:FindFirstChild("NameTextGroup")
@@ -1416,14 +1382,14 @@ local function startCaptionEffectsLoop(char, sessionId, vfxType, isSong, isSadDe
             local headerLbl = nameTextGroup and nameTextGroup:FindFirstChild("HeaderLbl")
             local headerGrad = headerLbl and headerLbl:FindFirstChild("HeaderGrad")
             local underlineBeam = headerSig and headerSig:FindFirstChild("UnderlineBeam")
-            local beamIllumGrad = underlineBeam and underlineBeam:FindFirstChild("BeamIllumGrad")
+            local underlineBeamCore = underlineBeam and underlineBeam:FindFirstChild("UnderlineBeamCore")
+            local beamIllumGrad = underlineBeamCore and underlineBeamCore:FindFirstChild("BeamIllumGrad")
 
             if starEmblem then
-                -- Rotación suave y pulso luminoso de la estrella neón
                 starEmblem.Rotation = (elapsed * 32) % 360
                 local starPulse = 1 + math.sin(elapsed * 3.4) * 0.07
-                starEmblem.Size = UDim2.new(0.185 * starPulse, 0, 0.96 * starPulse, 0)
-                starEmblem.ImageTransparency = 0.02 + math.abs(math.cos(elapsed * 3.0)) * 0.12
+                starEmblem.Size = UDim2.new(0.245 * starPulse, 0, 1.32 * starPulse, 0)
+                starEmblem.ImageTransparency = 0.0 + math.abs(math.cos(elapsed * 3.0)) * 0.08
             end
 
             if shadowCyan and shadowRed then
@@ -1437,9 +1403,11 @@ local function startCaptionEffectsLoop(char, sessionId, vfxType, isSong, isSadDe
             end
 
             if underlineBeam then
-                -- Pulso de iluminación del rayo y su nebulosa cósmica
                 local pulseWave = (math.sin(elapsed * 2.8) + 1) * 0.5
-                underlineBeam.ImageTransparency = 0.02 + (1 - pulseWave) * 0.16
+                underlineBeam.ImageTransparency = 0.0
+                if underlineBeamCore then
+                    underlineBeamCore.ImageTransparency = 0.04 + (1 - pulseWave) * 0.14
+                end
                 if beamIllumGrad then
                     beamIllumGrad.Offset = Vector2.new(-0.55 + pulseWave * 1.10, 0)
                 end
@@ -1518,7 +1486,7 @@ local function startCaptionEffectsLoop(char, sessionId, vfxType, isSong, isSadDe
                     end
 
                     if headerSig then
-                        headerSig.Position = UDim2.new(0.535 - 0.030 * splitProgress, 0, 0.145 + 0.012 * splitProgress, 0)
+                        headerSig.Position = UDim2.new(0.54 - 0.030 * splitProgress, 0, 0.145 + 0.012 * splitProgress, 0)
                         headerSig.Rotation = -3 - 5.0 * splitProgress + math.sin(elapsed * 2.2) * 0.7
                     end
 
@@ -1528,14 +1496,6 @@ local function startCaptionEffectsLoop(char, sessionId, vfxType, isSong, isSadDe
 
                     local breachLayer = cloudRoot:FindFirstChild("EnergyBreachLayer")
                     if breachLayer and elapsed > 0.55 then
-                        for idx = 1, #ARC_BRIDGES do
-                            local arcLine = breachLayer:FindFirstChild("ArcBridge_" .. idx)
-                            if arcLine and arcLine.Size.X.Scale > 0.01 then
-                                local pulseArc = math.abs(math.sin(elapsed * 18 + idx * 2.1))
-                                arcLine.BackgroundTransparency = (splitProgress > 0.88) and (0.45 + pulseArc * 0.45) or (0.1 + pulseArc * 0.55)
-                            end
-                        end
-
                         if elapsed >= nextLeakTime then
                             nextLeakTime = elapsed + 0.34
                             local refSeg = TEAR_SEGMENTS[math.random(1, #TEAR_SEGMENTS)]
