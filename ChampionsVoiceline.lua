@@ -23,7 +23,7 @@ local VfxActivos = true
 local STAR_EMBLEM_URL = "https://i.postimg.cc/brck1DN4/1000331975-Photoroom.png"
 local ENERGY_BEAM_URL = "https://i.postimg.cc/Y2RQv9wp/1000331989-Photoroom.png"
 
--- Valores por defecto y estado de posición/tamaño de la raya
+-- Valores por defecto y estado de posición/tamaño de la raya (sin límites)
 local DEFAULT_BEAM_POS_X = 0.6375
 local DEFAULT_BEAM_POS_Y = 0.8600
 local DEFAULT_BEAM_SIZE_X = 0.6850
@@ -416,10 +416,12 @@ local function applyBeamTransformToAll()
 
     for _, bb in pairs(charBillboards) do
         if bb and bb.Parent then
+            bb.MaxDistance = math.huge
             local cloudRoot = bb:FindFirstChild("CloudRoot")
             local headerSig = cloudRoot and cloudRoot:FindFirstChild("HeaderSignature")
             local underlineBeam = headerSig and headerSig:FindFirstChild("UnderlineBeam")
             if underlineBeam then
+                underlineBeam.ScaleType = Enum.ScaleType.Stretch
                 underlineBeam.Position = newPos
                 underlineBeam.Size = newSize
             end
@@ -429,10 +431,12 @@ local function applyBeamTransformToAll()
     local playerGui = player:FindFirstChild("PlayerGui")
     local directBb = playerGui and playerGui:FindFirstChild("NewFenderForceShieldBB")
     if directBb then
+        directBb.MaxDistance = math.huge
         local cloudRoot = directBb:FindFirstChild("CloudRoot")
         local headerSig = cloudRoot and cloudRoot:FindFirstChild("HeaderSignature")
         local underlineBeam = headerSig and headerSig:FindFirstChild("UnderlineBeam")
         if underlineBeam then
+            underlineBeam.ScaleType = Enum.ScaleType.Stretch
             underlineBeam.Position = newPos
             underlineBeam.Size = newSize
         end
@@ -518,6 +522,7 @@ local function resetBubbleGeometry(cloudRoot)
         headerSig.Rotation = -3
         local underlineBeam = headerSig:FindFirstChild("UnderlineBeam")
         if underlineBeam then
+            underlineBeam.ScaleType = Enum.ScaleType.Stretch
             underlineBeam.Position = UDim2.new(BeamPosX, 0, BeamPosY, 0)
             underlineBeam.Size = UDim2.new(BeamSizeX, 0, BeamSizeY, 0)
         end
@@ -642,6 +647,7 @@ local function getBillboard(char)
     local existing = charBillboards[char]
     if existing and existing.Parent then
         existing.Adornee = head
+        existing.MaxDistance = math.huge
         local cloudRoot = existing:FindFirstChild("CloudRoot")
         local shieldGroup = cloudRoot and cloudRoot:FindFirstChild("ShieldGroup")
         local innerLayer = shieldGroup and shieldGroup:FindFirstChild("InnerLayer")
@@ -661,7 +667,7 @@ local function getBillboard(char)
     bb.StudsOffset = Vector3.new(2.55, 2.15, 0)
     bb.AlwaysOnTop = false
     bb.LightInfluence = 0
-    bb.MaxDistance = 120
+    bb.MaxDistance = math.huge
     bb.ResetOnSpawn = false
     bb.Enabled = false
     bb.Parent = playerGui
@@ -990,7 +996,7 @@ local function getBillboard(char)
         Instance.new("UICorner", orbInner).CornerRadius = UDim.new(1, 0)
     end
 
-    -- 5. FIRMA SPIDER-MAN CON ESTRELLA MÁS GRANDE Y RAYA SIN EFECTOS NI CORTES
+    -- 5. FIRMA SPIDER-MAN CON ESTRELLA Y RAYA SIN EFECTOS NI LÍMITES
     local headerSig = Instance.new("Frame")
     headerSig.Name = "HeaderSignature"
     headerSig.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1078,7 +1084,7 @@ local function getBillboard(char)
     headerStroke.Color = Color3.fromRGB(10, 20, 46)
     headerStroke.Thickness = 2.2
 
-    -- Foto de la raya 100% limpia y controlada por BeamPosX/Y y BeamSizeX/Y
+    -- Foto de la raya 100% limpia con Stretch para poder estirarla a los lados y arriba/abajo sin límites
     local underlineBeam = Instance.new("ImageLabel")
     underlineBeam.Name = "UnderlineBeam"
     underlineBeam.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1088,7 +1094,7 @@ local function getBillboard(char)
     underlineBeam.ImageTransparency = 0
     underlineBeam.BorderSizePixel = 0
     underlineBeam.Image = ""
-    underlineBeam.ScaleType = Enum.ScaleType.Fit
+    underlineBeam.ScaleType = Enum.ScaleType.Stretch
     underlineBeam.ZIndex = 16
     underlineBeam.Parent = headerSig
     applySafeWebImage(underlineBeam, ENERGY_BEAM_URL, "omega_spidey_beam_v3.png")
@@ -2389,7 +2395,7 @@ local spideyTabBtn = createTabButton("SPIDER-MAN", 0, 0.32, 11)
 local colorGlobTabBtn = createTabButton("COLOR GLOB", 0.32, 0.34, 11)
 local beamAdjustTabBtn = createTabButton("AJUSTAR RAYA", 0.66, 0.34, 11)
 
-local function createScrollContainer()
+local function createScrollContainer(padSize)
     local sc = Instance.new("ScrollingFrame")
     sc.Size = UDim2.new(1, -30, 1, -108)
     sc.Position = UDim2.new(0, 15, 0, 100)
@@ -2399,7 +2405,7 @@ local function createScrollContainer()
     sc.Parent = mainFrame
 
     local ly = Instance.new("UIListLayout", sc)
-    ly.Padding = UDim.new(0, 12)
+    ly.Padding = UDim.new(0, padSize or 12)
     ly.SortOrder = Enum.SortOrder.LayoutOrder
 
     RunService.RenderStepped:Connect(function()
@@ -2410,7 +2416,7 @@ local function createScrollContainer()
     return sc
 end
 
-local spideyScroll = createScrollContainer()
+local spideyScroll = createScrollContainer(12)
 
 local colorGlobContainer = Instance.new("Frame")
 colorGlobContainer.Name = "ColorGlobChangerTab"
@@ -2420,13 +2426,9 @@ colorGlobContainer.BackgroundTransparency = 1
 colorGlobContainer.Visible = false
 colorGlobContainer.Parent = mainFrame
 
-local beamAdjustContainer = Instance.new("Frame")
-beamAdjustContainer.Name = "BeamAdjustTab"
-beamAdjustContainer.Size = UDim2.new(1, -30, 1, -108)
-beamAdjustContainer.Position = UDim2.new(0, 15, 0, 100)
-beamAdjustContainer.BackgroundTransparency = 1
-beamAdjustContainer.Visible = false
-beamAdjustContainer.Parent = mainFrame
+local beamAdjustScroll = createScrollContainer(8)
+beamAdjustScroll.Name = "BeamAdjustTab"
+beamAdjustScroll.Visible = false
 
 local function selectTab(tabName)
     local isSpidey = (tabName == "Spidey")
@@ -2435,7 +2437,7 @@ local function selectTab(tabName)
 
     spideyScroll.Visible = isSpidey
     colorGlobContainer.Visible = isColorGlob
-    beamAdjustContainer.Visible = isBeamAdjust
+    beamAdjustScroll.Visible = isBeamAdjust
 
     TweenService:Create(spideyTabBtn, TweenInfo.new(0.25), {
         BackgroundColor3 = isSpidey and Color3.fromRGB(215, 45, 65) or Color3.fromRGB(18, 18, 25),
@@ -2461,17 +2463,18 @@ selectTab("Spidey")
 local copyToClipboard = setclipboard or toclipboard or set_clipboard or (Clipboard and Clipboard.set)
 
 -- ==========================================
--- CONTENIDO DE LA PESTAÑA: AJUSTAR RAYA
+-- CONTENIDO DE LA PESTAÑA: AJUSTAR RAYA (SIN LÍMITES + ESTIRAMIENTO)
 -- ==========================================
 local beamPreviewActive = false
 local beamPreviewSessionId = nil
 local moveStep = 0.015
 
+-- 1. Botón Ver/Quitar Globo y Botón Copiar
 local topActionCard = Instance.new("Frame")
-topActionCard.Size = UDim2.new(1, -6, 0, 74)
-topActionCard.Position = UDim2.new(0, 3, 0, 2)
+topActionCard.Size = UDim2.new(1, -8, 0, 74)
 topActionCard.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-topActionCard.Parent = beamAdjustContainer
+topActionCard.LayoutOrder = 1
+topActionCard.Parent = beamAdjustScroll
 Instance.new("UICorner", topActionCard).CornerRadius = UDim.new(0, 12)
 
 local topActionStroke = Instance.new("UIStroke", topActionCard)
@@ -2551,7 +2554,7 @@ end)
 
 copyBeamBtn.MouseButton1Click:Connect(function()
     local exportText = string.format(
-        "underlineBeam.Position = UDim2.new(%.4f, 0, %.4f, 0)\nunderlineBeam.Size = UDim2.new(%.4f, 0, %.4f, 0)",
+        "underlineBeam.Position = UDim2.new(%.4f, 0, %.4f, 0)\nunderlineBeam.Size = UDim2.new(%.4f, 0, %.4f, 0)\nunderlineBeam.ScaleType = Enum.ScaleType.Stretch",
         BeamPosX, BeamPosY, BeamSizeX, BeamSizeY
     )
     if copyToClipboard then
@@ -2571,12 +2574,12 @@ copyBeamBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- Tarjeta de coordenadas en vivo + selector de velocidad/paso
+-- 2. Tarjeta de Precisión / Velocidad
 local statusStepCard = Instance.new("Frame")
-statusStepCard.Size = UDim2.new(1, -6, 0, 68)
-statusStepCard.Position = UDim2.new(0, 3, 0, 84)
+statusStepCard.Size = UDim2.new(1, -8, 0, 68)
 statusStepCard.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-statusStepCard.Parent = beamAdjustContainer
+statusStepCard.LayoutOrder = 2
+statusStepCard.Parent = beamAdjustScroll
 Instance.new("UICorner", statusStepCard).CornerRadius = UDim.new(0, 12)
 
 local statusStepStroke = Instance.new("UIStroke", statusStepCard)
@@ -2607,7 +2610,7 @@ stepTitleLbl.Parent = statusStepCard
 local stepOptions = {
     {label = "FINO (0.005)", val = 0.005},
     {label = "MEDIO (0.015)", val = 0.015},
-    {label = "RÁPIDO (0.04)", val = 0.040}
+    {label = "RÁPIDO (0.05)", val = 0.050}
 }
 local stepBtns = {}
 
@@ -2642,54 +2645,91 @@ for idx, item in ipairs(stepOptions) do
 end
 updateStepButtonsUI()
 
--- Tarjeta de cruceta con flechas para mover la raya
-local dpadCard = Instance.new("Frame")
-dpadCard.Size = UDim2.new(1, -6, 0, 154)
-dpadCard.Position = UDim2.new(0, 3, 0, 160)
-dpadCard.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-dpadCard.Parent = beamAdjustContainer
-Instance.new("UICorner", dpadCard).CornerRadius = UDim.new(0, 12)
+-- 3. Tarjeta de Zoom y Estiramiento (Sin límites)
+local stretchCard = Instance.new("Frame")
+stretchCard.Size = UDim2.new(1, -8, 0, 238)
+stretchCard.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+stretchCard.LayoutOrder = 3
+stretchCard.Parent = beamAdjustScroll
+Instance.new("UICorner", stretchCard).CornerRadius = UDim.new(0, 12)
 
-local dpadStroke = Instance.new("UIStroke", dpadCard)
-dpadStroke.Color = Color3.fromRGB(40, 42, 56)
-dpadStroke.Thickness = 1
+local stretchCardStroke = Instance.new("UIStroke", stretchCard)
+stretchCardStroke.Color = Color3.fromRGB(40, 42, 56)
+stretchCardStroke.Thickness = 1
 
-local dpadHeader = Instance.new("TextLabel")
-dpadHeader.Size = UDim2.new(1, -24, 0, 18)
-dpadHeader.Position = UDim2.new(0, 12, 0, 8)
-dpadHeader.BackgroundTransparency = 1
-dpadHeader.Text = "MOVER POSICIÓN CON FLECHAS"
-dpadHeader.TextColor3 = Color3.fromRGB(185, 195, 220)
-dpadHeader.Font = Enum.Font.GothamBlack
-dpadHeader.TextSize = 11
-dpadHeader.TextXAlignment = Enum.TextXAlignment.Left
-dpadHeader.Parent = dpadCard
+local stretchHeader = Instance.new("TextLabel")
+stretchHeader.Size = UDim2.new(0.66, 0, 0, 18)
+stretchHeader.Position = UDim2.new(0, 12, 0, 8)
+stretchHeader.BackgroundTransparency = 1
+stretchHeader.Text = "ZOOM Y ESTIRAR (SIN LÍMITE)"
+stretchHeader.TextColor3 = Color3.fromRGB(185, 195, 220)
+stretchHeader.Font = Enum.Font.GothamBlack
+stretchHeader.TextSize = 11
+stretchHeader.TextXAlignment = Enum.TextXAlignment.Left
+stretchHeader.Parent = stretchCard
 
-local widthValueLbl, heightValueLbl, widthSliderFill, heightSliderFill
+local resetAllBeamBtn = Instance.new("TextButton")
+resetAllBeamBtn.Size = UDim2.new(0, 102, 0, 22)
+resetAllBeamBtn.Position = UDim2.new(1, -114, 0, 6)
+resetAllBeamBtn.BackgroundColor3 = Color3.fromRGB(48, 30, 42)
+resetAllBeamBtn.Text = "RESET TODO"
+resetAllBeamBtn.TextColor3 = Color3.fromRGB(255, 150, 165)
+resetAllBeamBtn.Font = Enum.Font.GothamBlack
+resetAllBeamBtn.TextSize = 10
+resetAllBeamBtn.Parent = stretchCard
+Instance.new("UICorner", resetAllBeamBtn).CornerRadius = UDim.new(0, 6)
+
+local zoomValueLbl, widthValueBox, heightValueBox, widthSliderFill, heightSliderFill
+local posXBox, posYBox
 
 local function syncBeamUIAndApply()
-    BeamPosX = math.clamp(math.floor(BeamPosX * 10000 + 0.5) / 10000, -1.5, 2.5)
-    BeamPosY = math.clamp(math.floor(BeamPosY * 10000 + 0.5) / 10000, -1.5, 2.5)
-    BeamSizeX = math.clamp(math.floor(BeamSizeX * 10000 + 0.5) / 10000, 0.05, 2.5)
-    BeamSizeY = math.clamp(math.floor(BeamSizeY * 10000 + 0.5) / 10000, 0.05, 2.5)
+    BeamPosX = math.floor(BeamPosX * 10000 + 0.5) / 10000
+    BeamPosY = math.floor(BeamPosY * 10000 + 0.5) / 10000
+    BeamSizeX = math.max(0.001, math.floor(BeamSizeX * 10000 + 0.5) / 10000)
+    BeamSizeY = math.max(0.001, math.floor(BeamSizeY * 10000 + 0.5) / 10000)
 
     coordsReadoutLbl.Text = string.format(
-        "POS: X %.4f, Y %.4f   |   TAMAÑO: ANCHO %.4f, ALTO %.4f",
+        "POS: X %.4f, Y %.4f   |   ANCHO: %.4f   ALTO: %.4f",
         BeamPosX, BeamPosY, BeamSizeX, BeamSizeY
     )
 
-    if widthValueLbl then widthValueLbl.Text = string.format("%.4f", BeamSizeX) end
-    if heightValueLbl then heightValueLbl.Text = string.format("%.4f", BeamSizeY) end
+    local zoomRatio = BeamSizeX / DEFAULT_BEAM_SIZE_X
+    if zoomValueLbl then
+        zoomValueLbl.Text = string.format("%.2fx", zoomRatio)
+    end
+    if widthValueBox and not widthValueBox:IsFocused() then
+        widthValueBox.Text = string.format("%.4f", BeamSizeX)
+    end
+    if heightValueBox and not heightValueBox:IsFocused() then
+        heightValueBox.Text = string.format("%.4f", BeamSizeY)
+    end
+    if posXBox and not posXBox:IsFocused() then
+        posXBox.Text = string.format("%.4f", BeamPosX)
+    end
+    if posYBox and not posYBox:IsFocused() then
+        posYBox.Text = string.format("%.4f", BeamPosY)
+    end
+
     if widthSliderFill then
-        widthSliderFill.Size = UDim2.new(math.clamp((BeamSizeX - 0.05) / 1.95, 0, 1), 0, 1, 0)
+        local barRefX = math.max(2.0, BeamSizeX * 1.15)
+        widthSliderFill.Size = UDim2.new(math.clamp(BeamSizeX / barRefX, 0.02, 1), 0, 1, 0)
     end
     if heightSliderFill then
-        heightSliderFill.Size = UDim2.new(math.clamp((BeamSizeY - 0.05) / 2.45, 0, 1), 0, 1, 0)
+        local barRefY = math.max(2.0, BeamSizeY * 1.15)
+        heightSliderFill.Size = UDim2.new(math.clamp(BeamSizeY / barRefY, 0.02, 1), 0, 1, 0)
     end
 
     applyBeamTransformToAll()
     saveConfig()
 end
+
+resetAllBeamBtn.MouseButton1Click:Connect(function()
+    BeamPosX = DEFAULT_BEAM_POS_X
+    BeamPosY = DEFAULT_BEAM_POS_Y
+    BeamSizeX = DEFAULT_BEAM_SIZE_X
+    BeamSizeY = DEFAULT_BEAM_SIZE_Y
+    syncBeamUIAndApply()
+end)
 
 local function bindHoldRepeatButton(btn, actionFn)
     local holding = false
@@ -2698,10 +2738,10 @@ local function bindHoldRepeatButton(btn, actionFn)
             holding = true
             actionFn()
             task.spawn(function()
-                task.wait(0.32)
+                task.wait(0.30)
                 while holding and btn and btn.Parent do
                     actionFn()
-                    task.wait(0.06)
+                    task.wait(0.05)
                 end
             end)
         end
@@ -2715,6 +2755,227 @@ local function bindHoldRepeatButton(btn, actionFn)
         holding = false
     end)
 end
+
+-- Fila de Zoom General (agranda/achica proporcionalmente sin límite)
+local zoomRow = Instance.new("Frame")
+zoomRow.Size = UDim2.new(1, -24, 0, 44)
+zoomRow.Position = UDim2.new(0, 12, 0, 34)
+zoomRow.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
+zoomRow.Parent = stretchCard
+Instance.new("UICorner", zoomRow).CornerRadius = UDim.new(0, 9)
+
+local zoomTitleLbl = Instance.new("TextLabel")
+zoomTitleLbl.Size = UDim2.new(0, 165, 1, 0)
+zoomTitleLbl.Position = UDim2.new(0, 10, 0, 0)
+zoomTitleLbl.BackgroundTransparency = 1
+zoomTitleLbl.Text = "ZOOM GENERAL (X + Y)"
+zoomTitleLbl.TextColor3 = Color3.fromRGB(235, 240, 255)
+zoomTitleLbl.Font = Enum.Font.GothamBold
+zoomTitleLbl.TextSize = 11
+zoomTitleLbl.TextXAlignment = Enum.TextXAlignment.Left
+zoomTitleLbl.Parent = zoomRow
+
+local zoomOutBtn = Instance.new("TextButton")
+zoomOutBtn.Size = UDim2.new(0, 42, 0, 28)
+zoomOutBtn.Position = UDim2.new(1, -172, 0.5, -14)
+zoomOutBtn.BackgroundColor3 = Color3.fromRGB(32, 34, 48)
+zoomOutBtn.Text = "- 🔍"
+zoomOutBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+zoomOutBtn.Font = Enum.Font.GothamBlack
+zoomOutBtn.TextSize = 12
+zoomOutBtn.Parent = zoomRow
+Instance.new("UICorner", zoomOutBtn).CornerRadius = UDim.new(0, 6)
+
+zoomValueLbl = Instance.new("TextLabel")
+zoomValueLbl.Size = UDim2.new(0, 74, 0, 28)
+zoomValueLbl.Position = UDim2.new(1, -126, 0.5, -14)
+zoomValueLbl.BackgroundTransparency = 1
+zoomValueLbl.Text = "1.00x"
+zoomValueLbl.TextColor3 = COLOR_VIOLETA
+zoomValueLbl.Font = Enum.Font.GothamBlack
+zoomValueLbl.TextSize = 12
+zoomValueLbl.Parent = zoomRow
+
+local zoomInBtn = Instance.new("TextButton")
+zoomInBtn.Size = UDim2.new(0, 42, 0, 28)
+zoomInBtn.Position = UDim2.new(1, -48, 0.5, -14)
+zoomInBtn.BackgroundColor3 = Color3.fromRGB(32, 34, 48)
+zoomInBtn.Text = "+ 🔍"
+zoomInBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+zoomInBtn.Font = Enum.Font.GothamBlack
+zoomInBtn.TextSize = 12
+zoomInBtn.Parent = zoomRow
+Instance.new("UICorner", zoomInBtn).CornerRadius = UDim.new(0, 6)
+
+bindHoldRepeatButton(zoomOutBtn, function()
+    local ratio = BeamSizeY / math.max(0.001, BeamSizeX)
+    BeamSizeX = math.max(0.005, BeamSizeX - moveStep)
+    BeamSizeY = math.max(0.005, BeamSizeX * ratio)
+    syncBeamUIAndApply()
+end)
+
+bindHoldRepeatButton(zoomInBtn, function()
+    local ratio = BeamSizeY / math.max(0.001, BeamSizeX)
+    BeamSizeX = BeamSizeX + moveStep
+    BeamSizeY = BeamSizeX * ratio
+    syncBeamUIAndApply()
+end)
+
+local function buildStretchControl(labelText, posY, getVal, setVal)
+    local holder = Instance.new("Frame")
+    holder.Size = UDim2.new(1, -24, 0, 68)
+    holder.Position = UDim2.new(0, 12, 0, posY)
+    holder.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
+    holder.Parent = stretchCard
+    Instance.new("UICorner", holder).CornerRadius = UDim.new(0, 9)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0, 175, 0, 28)
+    lbl.Position = UDim2.new(0, 10, 0, 6)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = labelText
+    lbl.TextColor3 = Color3.fromRGB(235, 240, 255)
+    lbl.Font = Enum.Font.GothamBold
+    lbl.TextSize = 11
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = holder
+
+    local minusBtn = Instance.new("TextButton")
+    minusBtn.Size = UDim2.new(0, 36, 0, 28)
+    minusBtn.Position = UDim2.new(1, -166, 0, 6)
+    minusBtn.BackgroundColor3 = Color3.fromRGB(32, 34, 48)
+    minusBtn.Text = "-"
+    minusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    minusBtn.Font = Enum.Font.GothamBlack
+    minusBtn.TextSize = 16
+    minusBtn.Parent = holder
+    Instance.new("UICorner", minusBtn).CornerRadius = UDim.new(0, 6)
+
+    local valBox = Instance.new("TextBox")
+    valBox.Size = UDim2.new(0, 80, 0, 28)
+    valBox.Position = UDim2.new(1, -126, 0, 6)
+    valBox.BackgroundColor3 = Color3.fromRGB(22, 24, 34)
+    valBox.Text = string.format("%.4f", getVal())
+    valBox.TextColor3 = COLOR_CELESTE
+    valBox.Font = Enum.Font.GothamBlack
+    valBox.TextSize = 12
+    valBox.ClearTextOnFocus = false
+    valBox.Parent = holder
+    Instance.new("UICorner", valBox).CornerRadius = UDim.new(0, 6)
+
+    local plusBtn = Instance.new("TextButton")
+    plusBtn.Size = UDim2.new(0, 36, 0, 28)
+    plusBtn.Position = UDim2.new(1, -42, 0, 6)
+    plusBtn.BackgroundColor3 = Color3.fromRGB(32, 34, 48)
+    plusBtn.Text = "+"
+    plusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    plusBtn.Font = Enum.Font.GothamBlack
+    plusBtn.TextSize = 16
+    plusBtn.Parent = holder
+    Instance.new("UICorner", plusBtn).CornerRadius = UDim.new(0, 6)
+
+    valBox.FocusLost:Connect(function()
+        local num = tonumber(valBox.Text)
+        if num and num > 0 then
+            setVal(num)
+        end
+        syncBeamUIAndApply()
+    end)
+
+    local sBg = Instance.new("Frame")
+    sBg.Size = UDim2.new(1, -20, 0, 12)
+    sBg.Position = UDim2.new(0, 10, 0, 44)
+    sBg.BackgroundColor3 = Color3.fromRGB(9, 9, 13)
+    sBg.Parent = holder
+    Instance.new("UICorner", sBg).CornerRadius = UDim.new(1, 0)
+
+    local sFill = Instance.new("Frame")
+    sFill.Size = UDim2.new(0.35, 0, 1, 0)
+    sFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    sFill.Parent = sBg
+    Instance.new("UICorner", sFill).CornerRadius = UDim.new(1, 0)
+
+    local sGrad = Instance.new("UIGradient", sFill)
+    sGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, COLOR_CELESTE),
+        ColorSequenceKeypoint.new(0.5, COLOR_ROJO),
+        ColorSequenceKeypoint.new(1, COLOR_VIOLETA)
+    })
+
+    bindHoldRepeatButton(minusBtn, function()
+        setVal(getVal() - moveStep)
+        syncBeamUIAndApply()
+    end)
+
+    bindHoldRepeatButton(plusBtn, function()
+        setVal(getVal() + moveStep)
+        syncBeamUIAndApply()
+    end)
+
+    local draggingDim = false
+    local function updateFromBar(input)
+        local relX = math.clamp((input.Position.X - sBg.AbsolutePosition.X) / sBg.AbsoluteSize.X, 0, 1)
+        local dynamicMax = math.max(2.0, getVal() * 1.15)
+        setVal(0.02 + relX * dynamicMax)
+        syncBeamUIAndApply()
+    end
+
+    sBg.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            draggingDim = true
+            updateFromBar(input)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if draggingDim and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateFromBar(input)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            draggingDim = false
+        end
+    end)
+
+    return valBox, sFill
+end
+
+widthValueBox, widthSliderFill = buildStretchControl(
+    "ESTIRAR LADOS (ANCHO X)",
+    86,
+    function() return BeamSizeX end,
+    function(v) BeamSizeX = v end
+)
+
+heightValueBox, heightSliderFill = buildStretchControl(
+    "ESTIRAR ARRIBA/ABAJO (Y)",
+    162,
+    function() return BeamSizeY end,
+    function(v) BeamSizeY = v end
+)
+
+-- 4. Tarjeta de cruceta con flechas + edición directa X / Y (sin límites)
+local dpadCard = Instance.new("Frame")
+dpadCard.Size = UDim2.new(1, -8, 0, 194)
+dpadCard.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+dpadCard.LayoutOrder = 4
+dpadCard.Parent = beamAdjustScroll
+Instance.new("UICorner", dpadCard).CornerRadius = UDim.new(0, 12)
+
+local dpadStroke = Instance.new("UIStroke", dpadCard)
+dpadStroke.Color = Color3.fromRGB(40, 42, 56)
+dpadStroke.Thickness = 1
+
+local dpadHeader = Instance.new("TextLabel")
+dpadHeader.Size = UDim2.new(1, -24, 0, 18)
+dpadHeader.Position = UDim2.new(0, 12, 0, 8)
+dpadHeader.BackgroundTransparency = 1
+dpadHeader.Text = "MOVER POSICIÓN CON FLECHAS (SIN LÍMITE)"
+dpadHeader.TextColor3 = Color3.fromRGB(185, 195, 220)
+dpadHeader.Font = Enum.Font.GothamBlack
+dpadHeader.TextSize = 11
+dpadHeader.TextXAlignment = Enum.TextXAlignment.Left
+dpadHeader.Parent = dpadCard
 
 local function createArrowBtn(symbol, offsetX, posY, isReset)
     local b = Instance.new("TextButton")
@@ -2768,173 +3029,68 @@ centerResetPosBtn.MouseButton1Click:Connect(function()
     syncBeamUIAndApply()
 end)
 
--- Tarjeta de tamaño (Ancho y Alto)
-local sizeCard = Instance.new("Frame")
-sizeCard.Size = UDim2.new(1, -6, 0, 178)
-sizeCard.Position = UDim2.new(0, 3, 0, 322)
-sizeCard.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-sizeCard.Parent = beamAdjustContainer
-Instance.new("UICorner", sizeCard).CornerRadius = UDim.new(0, 12)
+-- Cajas editables para escribir X / Y directamente si se desea
+local posXLabel = Instance.new("TextLabel")
+posXLabel.Size = UDim2.new(0, 52, 0, 26)
+posXLabel.Position = UDim2.new(0, 18, 0, 156)
+posXLabel.BackgroundTransparency = 1
+posXLabel.Text = "POS X:"
+posXLabel.TextColor3 = Color3.fromRGB(165, 175, 200)
+posXLabel.Font = Enum.Font.GothamBlack
+posXLabel.TextSize = 11
+posXLabel.TextXAlignment = Enum.TextXAlignment.Left
+posXLabel.Parent = dpadCard
 
-local sizeCardStroke = Instance.new("UIStroke", sizeCard)
-sizeCardStroke.Color = Color3.fromRGB(40, 42, 56)
-sizeCardStroke.Thickness = 1
+posXBox = Instance.new("TextBox")
+posXBox.Size = UDim2.new(0, 120, 0, 26)
+posXBox.Position = UDim2.new(0, 70, 0, 156)
+posXBox.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
+posXBox.Text = string.format("%.4f", BeamPosX)
+posXBox.TextColor3 = COLOR_CELESTE
+posXBox.Font = Enum.Font.GothamBold
+posXBox.TextSize = 12
+posXBox.ClearTextOnFocus = false
+posXBox.Parent = dpadCard
+Instance.new("UICorner", posXBox).CornerRadius = UDim.new(0, 6)
 
-local sizeCardHeader = Instance.new("TextLabel")
-sizeCardHeader.Size = UDim2.new(0.6, 0, 0, 18)
-sizeCardHeader.Position = UDim2.new(0, 12, 0, 8)
-sizeCardHeader.BackgroundTransparency = 1
-sizeCardHeader.Text = "AJUSTAR TAMAÑO DE LA RAYA"
-sizeCardHeader.TextColor3 = Color3.fromRGB(185, 195, 220)
-sizeCardHeader.Font = Enum.Font.GothamBlack
-sizeCardHeader.TextSize = 11
-sizeCardHeader.TextXAlignment = Enum.TextXAlignment.Left
-sizeCardHeader.Parent = sizeCard
-
-local resetAllBeamBtn = Instance.new("TextButton")
-resetAllBeamBtn.Size = UDim2.new(0, 102, 0, 22)
-resetAllBeamBtn.Position = UDim2.new(1, -114, 0, 6)
-resetAllBeamBtn.BackgroundColor3 = Color3.fromRGB(48, 30, 42)
-resetAllBeamBtn.Text = "RESET TODO"
-resetAllBeamBtn.TextColor3 = Color3.fromRGB(255, 150, 165)
-resetAllBeamBtn.Font = Enum.Font.GothamBlack
-resetAllBeamBtn.TextSize = 10
-resetAllBeamBtn.Parent = sizeCard
-Instance.new("UICorner", resetAllBeamBtn).CornerRadius = UDim.new(0, 6)
-
-resetAllBeamBtn.MouseButton1Click:Connect(function()
-    BeamPosX = DEFAULT_BEAM_POS_X
-    BeamPosY = DEFAULT_BEAM_POS_Y
-    BeamSizeX = DEFAULT_BEAM_SIZE_X
-    BeamSizeY = DEFAULT_BEAM_SIZE_Y
+posXBox.FocusLost:Connect(function()
+    local num = tonumber(posXBox.Text)
+    if num then
+        BeamPosX = num
+    end
     syncBeamUIAndApply()
 end)
 
-local function buildDimensionControl(labelText, posY, minVal, maxVal, getVal, setVal)
-    local holder = Instance.new("Frame")
-    holder.Size = UDim2.new(1, -24, 0, 62)
-    holder.Position = UDim2.new(0, 12, 0, posY)
-    holder.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
-    holder.Parent = sizeCard
-    Instance.new("UICorner", holder).CornerRadius = UDim.new(0, 9)
+local posYLabel = Instance.new("TextLabel")
+posYLabel.Size = UDim2.new(0, 52, 0, 26)
+posYLabel.Position = UDim2.new(0.5, 14, 0, 156)
+posYLabel.BackgroundTransparency = 1
+posYLabel.Text = "POS Y:"
+posYLabel.TextColor3 = Color3.fromRGB(165, 175, 200)
+posYLabel.Font = Enum.Font.GothamBlack
+posYLabel.TextSize = 11
+posYLabel.TextXAlignment = Enum.TextXAlignment.Left
+posYLabel.Parent = dpadCard
 
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0, 130, 0, 26)
-    lbl.Position = UDim2.new(0, 10, 0, 6)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = labelText
-    lbl.TextColor3 = Color3.fromRGB(235, 240, 255)
-    lbl.Font = Enum.Font.GothamBold
-    lbl.TextSize = 12
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = holder
+posYBox = Instance.new("TextBox")
+posYBox.Size = UDim2.new(0, 120, 0, 26)
+posYBox.Position = UDim2.new(0.5, 66, 0, 156)
+posYBox.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
+posYBox.Text = string.format("%.4f", BeamPosY)
+posYBox.TextColor3 = COLOR_CELESTE
+posYBox.Font = Enum.Font.GothamBold
+posYBox.TextSize = 12
+posYBox.ClearTextOnFocus = false
+posYBox.Parent = dpadCard
+Instance.new("UICorner", posYBox).CornerRadius = UDim.new(0, 6)
 
-    local minusBtn = Instance.new("TextButton")
-    minusBtn.Size = UDim2.new(0, 34, 0, 26)
-    minusBtn.Position = UDim2.new(1, -158, 0, 6)
-    minusBtn.BackgroundColor3 = Color3.fromRGB(32, 34, 48)
-    minusBtn.Text = "-"
-    minusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    minusBtn.Font = Enum.Font.GothamBlack
-    minusBtn.TextSize = 16
-    minusBtn.Parent = holder
-    Instance.new("UICorner", minusBtn).CornerRadius = UDim.new(0, 6)
-
-    local valLbl = Instance.new("TextLabel")
-    valLbl.Size = UDim2.new(0, 74, 0, 26)
-    valLbl.Position = UDim2.new(1, -120, 0, 6)
-    valLbl.BackgroundTransparency = 1
-    valLbl.Text = string.format("%.4f", getVal())
-    valLbl.TextColor3 = COLOR_CELESTE
-    valLbl.Font = Enum.Font.GothamBlack
-    valLbl.TextSize = 12
-    valLbl.Parent = holder
-
-    local plusBtn = Instance.new("TextButton")
-    plusBtn.Size = UDim2.new(0, 34, 0, 26)
-    plusBtn.Position = UDim2.new(1, -42, 0, 6)
-    plusBtn.BackgroundColor3 = Color3.fromRGB(32, 34, 48)
-    plusBtn.Text = "+"
-    plusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    plusBtn.Font = Enum.Font.GothamBlack
-    plusBtn.TextSize = 16
-    plusBtn.Parent = holder
-    Instance.new("UICorner", plusBtn).CornerRadius = UDim.new(0, 6)
-
-    local sBg = Instance.new("Frame")
-    sBg.Size = UDim2.new(1, -20, 0, 12)
-    sBg.Position = UDim2.new(0, 10, 0, 40)
-    sBg.BackgroundColor3 = Color3.fromRGB(9, 9, 13)
-    sBg.Parent = holder
-    Instance.new("UICorner", sBg).CornerRadius = UDim.new(1, 0)
-
-    local sFill = Instance.new("Frame")
-    sFill.Size = UDim2.new(math.clamp((getVal() - minVal) / (maxVal - minVal), 0, 1), 0, 1, 0)
-    sFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    sFill.Parent = sBg
-    Instance.new("UICorner", sFill).CornerRadius = UDim.new(1, 0)
-
-    local sGrad = Instance.new("UIGradient", sFill)
-    sGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, COLOR_CELESTE),
-        ColorSequenceKeypoint.new(0.5, COLOR_ROJO),
-        ColorSequenceKeypoint.new(1, COLOR_VIOLETA)
-    })
-
-    bindHoldRepeatButton(minusBtn, function()
-        setVal(getVal() - moveStep)
-        syncBeamUIAndApply()
-    end)
-
-    bindHoldRepeatButton(plusBtn, function()
-        setVal(getVal() + moveStep)
-        syncBeamUIAndApply()
-    end)
-
-    local draggingDim = false
-    local function updateFromBar(input)
-        local relX = math.clamp((input.Position.X - sBg.AbsolutePosition.X) / sBg.AbsoluteSize.X, 0, 1)
-        setVal(minVal + relX * (maxVal - minVal))
-        syncBeamUIAndApply()
+posYBox.FocusLost:Connect(function()
+    local num = tonumber(posYBox.Text)
+    if num then
+        BeamPosY = num
     end
-
-    sBg.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            draggingDim = true
-            updateFromBar(input)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if draggingDim and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            updateFromBar(input)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            draggingDim = false
-        end
-    end)
-
-    return valLbl, sFill
-end
-
-widthValueLbl, widthSliderFill = buildDimensionControl(
-    "ANCHO (X)",
-    36,
-    0.05,
-    2.00,
-    function() return BeamSizeX end,
-    function(v) BeamSizeX = v end
-)
-
-heightValueLbl, heightSliderFill = buildDimensionControl(
-    "ALTO (Y)",
-    106,
-    0.05,
-    2.50,
-    function() return BeamSizeY end,
-    function(v) BeamSizeY = v end
-)
+    syncBeamUIAndApply()
+end)
 
 syncBeamUIAndApply()
 
