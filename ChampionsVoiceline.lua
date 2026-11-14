@@ -19,6 +19,10 @@ local VolumeData = {}
 local VoicelinesActivas = true
 local VfxActivos = true
 
+-- URLs de emblema estrella y rayo cósmico
+local STAR_EMBLEM_URL = "https://i.postimg.cc/brck1DN4/1000331975-Photoroom.png"
+local ENERGY_BEAM_URL = "https://i.postimg.cc/C1HL6z4y/1000331978-Photoroom.png"
+
 -- Colores para el borde luminoso, puntos y texto (Celeste bajito, Rojo y Violeta cristalino)
 local COLOR_CELESTE = Color3.fromRGB(142, 228, 255) -- Celeste bajito
 local COLOR_ROJO    = Color3.fromRGB(240, 36, 56)   -- Rojo intenso
@@ -31,6 +35,97 @@ local SHIELD_CRIMSON   = Color3.fromRGB(58, 14, 30)
 local SHIELD_SEPARATOR = Color3.fromRGB(22, 56, 110)  -- Separador en azul zafiro profundo
 
 local GLOBAL_PALETTE = {COLOR_CELESTE, COLOR_ROJO, COLOR_VIOLETA}
+
+-- ==========================================
+-- CARGADOR SEGURO DE IMÁGENES (MÉTODO V23.5 SAFE)
+-- ==========================================
+local loadedImageCache = {}
+
+local function applySafeWebImage(imageLabel, url, fileName)
+    if not imageLabel then return end
+
+    if loadedImageCache[fileName] then
+        pcall(function()
+            imageLabel.Image = loadedImageCache[fileName]
+        end)
+        return
+    end
+
+    task.spawn(function()
+        local assetPath = nil
+
+        -- 1. Si ya está descargada en disco, cargarla directo
+        pcall(function()
+            if isfile and isfile(fileName) and getasset then
+                assetPath = getasset(fileName)
+            end
+        end)
+
+        -- 2. Si no existe, descargar usando los métodos seguros
+        if not assetPath then
+            local success = false
+
+            pcall(function()
+                if http_request and writefile and getasset then
+                    local res = http_request({Url = url, Method = "GET"})
+                    if res and res.Body and #res.Body > 500 then
+                        writefile(fileName, res.Body)
+                        assetPath = getasset(fileName)
+                        success = true
+                    end
+                end
+            end)
+
+            if not success then
+                pcall(function()
+                    if syn and syn.request and writefile and getasset then
+                        local res = syn.request({Url = url, Method = "GET"})
+                        if res and res.Body and #res.Body > 500 then
+                            writefile(fileName, res.Body)
+                            assetPath = getasset(fileName)
+                            success = true
+                        end
+                    end
+                end)
+            end
+
+            if not success then
+                pcall(function()
+                    if request and writefile and getasset then
+                        local res = request({Url = url, Method = "GET"})
+                        if res and res.Body and #res.Body > 500 then
+                            writefile(fileName, res.Body)
+                            assetPath = getasset(fileName)
+                            success = true
+                        end
+                    end
+                end)
+            end
+
+            if not success then
+                pcall(function()
+                    if writefile and getasset then
+                        local body = game:HttpGet(url)
+                        if body and #body > 500 then
+                            writefile(fileName, body)
+                            assetPath = getasset(fileName)
+                            success = true
+                        end
+                    end
+                end)
+            end
+        end
+
+        if assetPath then
+            loadedImageCache[fileName] = assetPath
+            pcall(function()
+                if imageLabel and imageLabel.Parent then
+                    imageLabel.Image = assetPath
+                end
+            end)
+        end
+    end)
+end
 
 -- Estado personalizado del interior del globo (persistente)
 local CustomGlobeHex = nil
@@ -62,7 +157,7 @@ local function getDefaultInnerColorSequence()
     })
 end
 
-local function applyInnerColorToLayer(innerLayer, emblemInner)
+local function applyInnerColorToLayer(innerLayer)
     if innerLayer then
         local innerGrad = innerLayer:FindFirstChild("InnerGrad")
         if CustomGlobeColor then
@@ -84,22 +179,6 @@ local function applyInnerColorToLayer(innerLayer, emblemInner)
                     child.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 end
             end
-        end
-    end
-
-    if emblemInner then
-        local embGrad = emblemInner:FindFirstChild("EmblemInnerGrad")
-        if CustomGlobeColor then
-            if embGrad then
-                embGrad.Enabled = false
-            end
-            emblemInner.BackgroundColor3 = CustomGlobeColor
-        else
-            if embGrad then
-                embGrad.Color = getDefaultInnerColorSequence()
-                embGrad.Enabled = true
-            end
-            emblemInner.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         end
     end
 end
@@ -289,7 +368,7 @@ local function saveConfig()
 end
 
 -- ==========================================
--- SISTEMA DE NUBE FORCE-SHIELD + FIRMA HOLOGRÁFICA + DESGARRO DE ENERGÍA
+-- SISTEMA DE NUBE FORCE-SHIELD + ESTRELLA NEÓN + RAYO CÓSMICO + DESGARRO
 -- ==========================================
 local activeBillboards = {}
 local activeCaptionLoops = {}
@@ -416,10 +495,7 @@ local function refreshAllBillboardInnerColors()
             local cloudRoot = bb:FindFirstChild("CloudRoot")
             local shieldGroup = cloudRoot and cloudRoot:FindFirstChild("ShieldGroup")
             local innerLayer = shieldGroup and shieldGroup:FindFirstChild("InnerLayer")
-            local headerSig = cloudRoot and cloudRoot:FindFirstChild("HeaderSignature")
-            local emblemHolder = headerSig and headerSig:FindFirstChild("EmblemHolder")
-            local emblemInner = emblemHolder and emblemHolder:FindFirstChild("EmblemInner")
-            applyInnerColorToLayer(innerLayer, emblemInner)
+            applyInnerColorToLayer(innerLayer)
         end
     end
 end
@@ -517,10 +593,7 @@ local function getBillboard(char)
         local cloudRoot = existing:FindFirstChild("CloudRoot")
         local shieldGroup = cloudRoot and cloudRoot:FindFirstChild("ShieldGroup")
         local innerLayer = shieldGroup and shieldGroup:FindFirstChild("InnerLayer")
-        local headerSig = cloudRoot and cloudRoot:FindFirstChild("HeaderSignature")
-        local emblemHolder = headerSig and headerSig:FindFirstChild("EmblemHolder")
-        local emblemInner = emblemHolder and emblemHolder:FindFirstChild("EmblemInner")
-        applyInnerColorToLayer(innerLayer, emblemInner)
+        applyInnerColorToLayer(innerLayer)
         return existing
     end
 
@@ -863,78 +936,36 @@ local function getBillboard(char)
         Instance.new("UICorner", orbInner).CornerRadius = UDim.new(1, 0)
     end
 
-    -- 5. FIRMA HOLOGRÁFICA SPIDER-VERSE INTEGRADA EN LA CURVA SUPERIOR (SIN CAJAS TOSCAS)
+    -- 5. FIRMA HOLOGRÁFICA SPIDER-VERSE CON ESTRELLA NEÓN Y RAYO CÓSMICO
     local headerSig = Instance.new("Frame")
     headerSig.Name = "HeaderSignature"
     headerSig.AnchorPoint = Vector2.new(0.5, 0.5)
     headerSig.Position = UDim2.new(0.535, 0, 0.145, 0)
-    headerSig.Size = UDim2.new(0.56, 0, 0.128, 0)
+    headerSig.Size = UDim2.new(0.58, 0, 0.145, 0)
     headerSig.Rotation = -3
     headerSig.BackgroundTransparency = 1
     headerSig.ZIndex = 14
     headerSig.Parent = cloudRoot
 
-    -- Emblema romboidal Force-Shield a la izquierda del nombre
-    local emblemHolder = Instance.new("Frame")
-    emblemHolder.Name = "EmblemHolder"
-    emblemHolder.AnchorPoint = Vector2.new(0.5, 0.5)
-    emblemHolder.Position = UDim2.new(0.11, 0, 0.46, 0)
-    emblemHolder.Size = UDim2.new(0.115, 0, 0.72, 0)
-    emblemHolder.Rotation = 45
-    emblemHolder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    emblemHolder.BorderSizePixel = 0
-    emblemHolder.ZIndex = 15
-    emblemHolder.Parent = headerSig
-    Instance.new("UICorner", emblemHolder).CornerRadius = UDim.new(0.28, 0)
+    -- Estrella Neón brillante a la izquierda del nombre (1000331975-Photoroom.png)
+    local starEmblem = Instance.new("ImageLabel")
+    starEmblem.Name = "StarEmblem"
+    starEmblem.AnchorPoint = Vector2.new(0.5, 0.5)
+    starEmblem.Position = UDim2.new(0.105, 0, 0.45, 0)
+    starEmblem.Size = UDim2.new(0.185, 0, 0.96, 0)
+    starEmblem.BackgroundTransparency = 1
+    starEmblem.Image = ""
+    starEmblem.ScaleType = Enum.ScaleType.Fit
+    starEmblem.ZIndex = 16
+    starEmblem.Parent = headerSig
+    applySafeWebImage(starEmblem, STAR_EMBLEM_URL, "omega_spidey_star_v1.png")
 
-    local embOuterGrad = Instance.new("UIGradient", emblemHolder)
-    embOuterGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.0, COLOR_CELESTE),
-        ColorSequenceKeypoint.new(0.5, COLOR_ROJO),
-        ColorSequenceKeypoint.new(1.0, COLOR_VIOLETA)
-    })
-
-    local emblemSep = Instance.new("Frame")
-    emblemSep.AnchorPoint = Vector2.new(0.5, 0.5)
-    emblemSep.Position = UDim2.new(0.5, 0, 0.5, 0)
-    emblemSep.Size = UDim2.new(0.82, 0, 0.82, 0)
-    emblemSep.BackgroundColor3 = SHIELD_SEPARATOR
-    emblemSep.BorderSizePixel = 0
-    emblemSep.ZIndex = 16
-    emblemSep.Parent = emblemHolder
-    Instance.new("UICorner", emblemSep).CornerRadius = UDim.new(0.25, 0)
-
-    local emblemInner = Instance.new("Frame")
-    emblemInner.Name = "EmblemInner"
-    emblemInner.AnchorPoint = Vector2.new(0.5, 0.5)
-    emblemInner.Position = UDim2.new(0.5, 0, 0.5, 0)
-    emblemInner.Size = UDim2.new(0.64, 0, 0.64, 0)
-    emblemInner.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    emblemInner.BorderSizePixel = 0
-    emblemInner.ZIndex = 17
-    emblemInner.Parent = emblemHolder
-    Instance.new("UICorner", emblemInner).CornerRadius = UDim.new(0.22, 0)
-
-    local embInnerGrad = Instance.new("UIGradient", emblemInner)
-    embInnerGrad.Name = "EmblemInnerGrad"
-    embInnerGrad.Color = getDefaultInnerColorSequence()
-
-    local emblemCoreDot = Instance.new("Frame")
-    emblemCoreDot.AnchorPoint = Vector2.new(0.5, 0.5)
-    emblemCoreDot.Position = UDim2.new(0.5, 0, 0.5, 0)
-    emblemCoreDot.Size = UDim2.new(0.36, 0, 0.36, 0)
-    emblemCoreDot.BackgroundColor3 = COLOR_CELESTE
-    emblemCoreDot.BorderSizePixel = 0
-    emblemCoreDot.ZIndex = 18
-    emblemCoreDot.Parent = emblemHolder
-    Instance.new("UICorner", emblemCoreDot).CornerRadius = UDim.new(1, 0)
-
-    -- Tipografía 3D estilo Spider-Verse con aberración cromática (Celeste + Rojo + Núcleo Luminoso)
+    -- Tipografía 3D estilo Spider-Verse con aberración cromática
     local nameTextGroup = Instance.new("Frame")
     nameTextGroup.Name = "NameTextGroup"
     nameTextGroup.AnchorPoint = Vector2.new(0, 0.5)
-    nameTextGroup.Position = UDim2.new(0.20, 0, 0.44, 0)
-    nameTextGroup.Size = UDim2.new(0.78, 0, 0.82, 0)
+    nameTextGroup.Position = UDim2.new(0.21, 0, 0.42, 0)
+    nameTextGroup.Size = UDim2.new(0.77, 0, 0.76, 0)
     nameTextGroup.BackgroundTransparency = 1
     nameTextGroup.ZIndex = 15
     nameTextGroup.Parent = headerSig
@@ -992,43 +1023,37 @@ local function getBillboard(char)
     headerStroke.Color = Color3.fromRGB(10, 20, 46)
     headerStroke.Thickness = 2.2
 
-    -- Haz de energía inferior que une el emblema con el contorno superior de la nube
-    local underlineBeam = Instance.new("Frame")
+    -- Rayo de energía con destello estelar y nebulosa cósmica (1000331978-Photoroom.png)
+    local underlineBeam = Instance.new("ImageLabel")
     underlineBeam.Name = "UnderlineBeam"
     underlineBeam.AnchorPoint = Vector2.new(0, 0.5)
-    underlineBeam.Position = UDim2.new(0.18, 0, 0.90, 0)
-    underlineBeam.Size = UDim2.new(0.78, 0, 0.11, 0)
-    underlineBeam.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    underlineBeam.BorderSizePixel = 0
+    underlineBeam.Position = UDim2.new(0.165, 0, 0.88, 0)
+    underlineBeam.Size = UDim2.new(0.88, 0, 0.62, 0)
+    underlineBeam.BackgroundTransparency = 1
+    underlineBeam.Image = ""
+    underlineBeam.ScaleType = Enum.ScaleType.Stretch
     underlineBeam.ZIndex = 15
     underlineBeam.Parent = headerSig
-    Instance.new("UICorner", underlineBeam).CornerRadius = UDim.new(1, 0)
+    applySafeWebImage(underlineBeam, ENERGY_BEAM_URL, "omega_spidey_beam_v1.png")
 
-    local beamStroke = Instance.new("UIStroke", underlineBeam)
-    beamStroke.Color = SHIELD_SEPARATOR
-    beamStroke.Thickness = 1.3
-
-    local beamGrad = Instance.new("UIGradient", underlineBeam)
-    beamGrad.Name = "BeamGrad"
-    beamGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.00, COLOR_CELESTE),
-        ColorSequenceKeypoint.new(0.35, COLOR_ROJO),
-        ColorSequenceKeypoint.new(0.70, COLOR_VIOLETA),
-        ColorSequenceKeypoint.new(1.00, COLOR_CELESTE)
+    -- Gradiente de iluminación que recorre y enciende el rayo y la nebulosa
+    local beamIllumGrad = Instance.new("UIGradient", underlineBeam)
+    beamIllumGrad.Name = "BeamIllumGrad"
+    beamIllumGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(165, 235, 255)),
+        ColorSequenceKeypoint.new(0.35, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.65, Color3.fromRGB(195, 245, 255)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(220, 190, 255))
+    })
+    beamIllumGrad.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0.00, 0.28),
+        NumberSequenceKeypoint.new(0.35, 0.08),
+        NumberSequenceKeypoint.new(0.50, 0.00),
+        NumberSequenceKeypoint.new(0.65, 0.08),
+        NumberSequenceKeypoint.new(1.00, 0.24)
     })
 
-    local beamSpark = Instance.new("Frame")
-    beamSpark.Name = "BeamSpark"
-    beamSpark.AnchorPoint = Vector2.new(0.5, 0.5)
-    beamSpark.Position = UDim2.new(0.15, 0, 0.5, 0)
-    beamSpark.Size = UDim2.new(0.14, 0, 1.85, 0)
-    beamSpark.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    beamSpark.BorderSizePixel = 0
-    beamSpark.ZIndex = 16
-    beamSpark.Parent = underlineBeam
-    Instance.new("UICorner", beamSpark).CornerRadius = UDim.new(1, 0)
-
-    applyInnerColorToLayer(innerLayer, emblemInner)
+    applyInnerColorToLayer(innerLayer)
 
     -- 6. CAPA DE DESGARRO PROGRESIVO DE ENERGÍA (PARA "im okay im okay")
     local breachLayer = Instance.new("Frame")
@@ -1039,7 +1064,6 @@ local function getBillboard(char)
     breachLayer.ZIndex = 12
     breachLayer.Parent = cloudRoot
 
-    -- Epicentro de sobrecarga donde inicia la fisura
     local breachOrigin = Instance.new("Frame")
     breachOrigin.Name = "BreachOrigin"
     breachOrigin.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1068,7 +1092,6 @@ local function getBillboard(char)
     originRingStroke.Thickness = 2.0
     originRingStroke.Transparency = 1
 
-    -- Segmentos de desgarro de plasma (vacío oscuro + borde luminoso de contención)
     for idx, seg in ipairs(TEAR_SEGMENTS) do
         local tearSeg = Instance.new("Frame")
         tearSeg.Name = "TearSeg_" .. idx
@@ -1102,7 +1125,6 @@ local function getBillboard(char)
         Instance.new("UICorner", coreFilament).CornerRadius = UDim.new(1, 0)
     end
 
-    -- Arcos eléctricos que cruzan el desgarro mientras se separan ambas mitades
     for idx, arc in ipairs(ARC_BRIDGES) do
         local arcLine = Instance.new("Frame")
         arcLine.Name = "ArcBridge_" .. idx
@@ -1165,7 +1187,6 @@ local function getBillboard(char)
         ColorSequenceKeypoint.new(1.00, COLOR_CELESTE)
     })
 
-    -- Contenedor de Ondas de Música (solo visible cuando suena la canción)
     local musicWavesHolder = Instance.new("Frame")
     musicWavesHolder.Name = "MusicWavesHolder"
     musicWavesHolder.Size = UDim2.new(1, 0, 1, 0)
@@ -1299,7 +1320,6 @@ local function startProgressiveEnergyBreach(cloudRoot, sessionId, char)
         end
     end
 
-    -- FASE 1 (0.24s): El globo entra intacto primero y luego aparece el punto de sobrecarga
     task.delay(0.24, function()
         if not breachLayer or not breachLayer.Parent then return end
         if char and char:GetAttribute("VoiceSession") ~= sessionId then return end
@@ -1327,7 +1347,6 @@ local function startProgressiveEnergyBreach(cloudRoot, sessionId, char)
         end
     end)
 
-    -- FASE 2 (0.45s -> 1.05s): Desgarro progresivo tramo por tramo de arriba hacia abajo
     for idx, seg in ipairs(TEAR_SEGMENTS) do
         local tearSeg = breachLayer:FindFirstChild("TearSeg_" .. idx)
         if tearSeg then
@@ -1355,7 +1374,6 @@ local function startProgressiveEnergyBreach(cloudRoot, sessionId, char)
         end
     end
 
-    -- Arcos de voltaje que cruzan la fisura conforme se abre
     for idx, arc in ipairs(ARC_BRIDGES) do
         local arcLine = breachLayer:FindFirstChild("ArcBridge_" .. idx)
         if arcLine then
@@ -1389,35 +1407,42 @@ local function startCaptionEffectsLoop(char, sessionId, vfxType, isSong, isSadDe
 
             local elapsed = tick() - startTime
 
-            -- 1. Animación de la firma holográfica del personaje
+            -- 1. Animación de la Estrella Neón y del Rayo de Energía Cósmico
             local headerSig = cloudRoot:FindFirstChild("HeaderSignature")
-            local emblemHolder = headerSig and headerSig:FindFirstChild("EmblemHolder")
+            local starEmblem = headerSig and headerSig:FindFirstChild("StarEmblem")
             local nameTextGroup = headerSig and headerSig:FindFirstChild("NameTextGroup")
             local shadowCyan = nameTextGroup and nameTextGroup:FindFirstChild("ShadowCyan")
             local shadowRed = nameTextGroup and nameTextGroup:FindFirstChild("ShadowRed")
             local headerLbl = nameTextGroup and nameTextGroup:FindFirstChild("HeaderLbl")
             local headerGrad = headerLbl and headerLbl:FindFirstChild("HeaderGrad")
             local underlineBeam = headerSig and headerSig:FindFirstChild("UnderlineBeam")
-            local beamGrad = underlineBeam and underlineBeam:FindFirstChild("BeamGrad")
-            local beamSpark = underlineBeam and underlineBeam:FindFirstChild("BeamSpark")
+            local beamIllumGrad = underlineBeam and underlineBeam:FindFirstChild("BeamIllumGrad")
 
-            if emblemHolder then
-                emblemHolder.Rotation = 45 + math.sin(elapsed * 2.4) * 14
+            if starEmblem then
+                -- Rotación suave y pulso luminoso de la estrella neón
+                starEmblem.Rotation = (elapsed * 32) % 360
+                local starPulse = 1 + math.sin(elapsed * 3.4) * 0.07
+                starEmblem.Size = UDim2.new(0.185 * starPulse, 0, 0.96 * starPulse, 0)
+                starEmblem.ImageTransparency = 0.02 + math.abs(math.cos(elapsed * 3.0)) * 0.12
             end
+
             if shadowCyan and shadowRed then
                 local glitchOff = math.sin(elapsed * 3.8) * 0.005
                 shadowCyan.Position = UDim2.new(-0.016 - glitchOff, 0, -0.022, 0)
                 shadowRed.Position = UDim2.new(0.016 + glitchOff, 0, 0.022, 0)
             end
+
             if headerGrad then
                 headerGrad.Offset = Vector2.new(math.sin(elapsed * 2.1) * 0.70, 0)
             end
-            if beamGrad then
-                beamGrad.Offset = Vector2.new(math.cos(elapsed * 2.3) * 0.85, 0)
-            end
-            if beamSpark then
-                local sparkX = 0.12 + ((math.sin(elapsed * 2.6) + 1) * 0.5) * 0.76
-                beamSpark.Position = UDim2.new(sparkX, 0, 0.5, 0)
+
+            if underlineBeam then
+                -- Pulso de iluminación del rayo y su nebulosa cósmica
+                local pulseWave = (math.sin(elapsed * 2.8) + 1) * 0.5
+                underlineBeam.ImageTransparency = 0.02 + (1 - pulseWave) * 0.16
+                if beamIllumGrad then
+                    beamIllumGrad.Offset = Vector2.new(-0.55 + pulseWave * 1.10, 0)
+                end
             end
 
             local safeTextZone = cloudRoot:FindFirstChild("SafeTextZone")
@@ -1457,7 +1482,6 @@ local function startCaptionEffectsLoop(char, sessionId, vfxType, isSong, isSadDe
 
             local splitProgress = 0
             if isSadDeath and elapsed > 0.45 then
-                -- Empieza suave a los 0.45s y se abre progresivamente durante 0.85s
                 local rawT = math.clamp((elapsed - 0.45) / 0.85, 0, 1)
                 splitProgress = rawT * rawT * (3 - 2 * rawT)
             end
@@ -1502,7 +1526,6 @@ local function startCaptionEffectsLoop(char, sessionId, vfxType, isSong, isSadDe
                         quoteLbl.Rotation = 3.0 * splitProgress
                     end
 
-                    -- Parpadeo eléctrico en los arcos que cruzan la fisura
                     local breachLayer = cloudRoot:FindFirstChild("EnergyBreachLayer")
                     if breachLayer and elapsed > 0.55 then
                         for idx = 1, #ARC_BRIDGES do
@@ -1686,7 +1709,6 @@ local function startCaptionEffectsLoop(char, sessionId, vfxType, isSong, isSadDe
                 shakeY = math.cos(elapsed * 68) * 0.014 * power
                 shakeRot = math.sin(elapsed * 54) * 2.8 * power
             elseif isSadDeath and elapsed >= 0.24 and elapsed < 1.15 then
-                -- Empieza vibrando cuando aparece el punto de sobrecarga y se intensifica al desgarrarse
                 local pTime = elapsed - 0.24
                 local envelope = math.sin(math.clamp(pTime / 0.91, 0, 1) * math.pi)
                 shakeX = math.sin(elapsed * 64) * 0.024 * envelope
@@ -1767,7 +1789,6 @@ local function showThoughtBubble(char, data, sessionId)
     local cloudRoot = bb:FindFirstChild("CloudRoot")
     if not cloudRoot then return end
 
-    -- Restaurar geometría original de los lóbulos antes de iniciar cualquier efecto
     resetBubbleGeometry(cloudRoot)
 
     local breachLayer = cloudRoot:FindFirstChild("EnergyBreachLayer")
