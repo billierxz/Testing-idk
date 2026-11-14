@@ -19,7 +19,7 @@ local VolumeData = {}
 local VoicelinesActivas = true
 local VfxActivos = true
 
--- URLs de emblema estrella y nueva raya de energía
+-- URLs de emblema estrella y raya de energía
 local STAR_EMBLEM_URL = "https://i.postimg.cc/brck1DN4/1000331975-Photoroom.png"
 local ENERGY_BEAM_URL = "https://i.postimg.cc/Y2RQv9wp/1000331989-Photoroom.png"
 
@@ -41,6 +41,17 @@ local GLOBAL_PALETTE = {COLOR_CELESTE, COLOR_ROJO, COLOR_VIOLETA}
 -- ==========================================
 local loadedImageCache = {}
 
+local function isValidImageBody(body)
+    if type(body) ~= "string" or #body < 500 then
+        return false
+    end
+    local head = body:sub(1, 32):lower()
+    if head:find("<html") or head:find("<!doctype") then
+        return false
+    end
+    return true
+end
+
 local function applySafeWebImage(imageLabel, url, fileName)
     if not imageLabel then return end
 
@@ -54,21 +65,25 @@ local function applySafeWebImage(imageLabel, url, fileName)
     task.spawn(function()
         local assetPath = nil
 
-        -- 1. Si ya está descargada en disco, cargarla directo
+        -- 1. Si ya está descargada y es válida en disco, cargarla directo
         pcall(function()
-            if isfile and isfile(fileName) and getasset then
-                assetPath = getasset(fileName)
+            if isfile and isfile(fileName) and readfile and getasset then
+                local existingData = readfile(fileName)
+                if isValidImageBody(existingData) then
+                    assetPath = getasset(fileName)
+                end
             end
         end)
 
-        -- 2. Si no existe, descargar usando los métodos seguros
+        -- 2. Si no existe o estaba corrupta, descargar usando los métodos seguros
         if not assetPath then
             local success = false
+            local reqHeaders = {["User-Agent"] = "Mozilla/5.0"}
 
             pcall(function()
                 if http_request and writefile and getasset then
-                    local res = http_request({Url = url, Method = "GET"})
-                    if res and res.Body and #res.Body > 500 then
+                    local res = http_request({Url = url, Method = "GET", Headers = reqHeaders})
+                    if res and isValidImageBody(res.Body) then
                         writefile(fileName, res.Body)
                         assetPath = getasset(fileName)
                         success = true
@@ -79,8 +94,8 @@ local function applySafeWebImage(imageLabel, url, fileName)
             if not success then
                 pcall(function()
                     if syn and syn.request and writefile and getasset then
-                        local res = syn.request({Url = url, Method = "GET"})
-                        if res and res.Body and #res.Body > 500 then
+                        local res = syn.request({Url = url, Method = "GET", Headers = reqHeaders})
+                        if res and isValidImageBody(res.Body) then
                             writefile(fileName, res.Body)
                             assetPath = getasset(fileName)
                             success = true
@@ -92,8 +107,8 @@ local function applySafeWebImage(imageLabel, url, fileName)
             if not success then
                 pcall(function()
                     if request and writefile and getasset then
-                        local res = request({Url = url, Method = "GET"})
-                        if res and res.Body and #res.Body > 500 then
+                        local res = request({Url = url, Method = "GET", Headers = reqHeaders})
+                        if res and isValidImageBody(res.Body) then
                             writefile(fileName, res.Body)
                             assetPath = getasset(fileName)
                             success = true
@@ -106,7 +121,7 @@ local function applySafeWebImage(imageLabel, url, fileName)
                 pcall(function()
                     if writefile and getasset then
                         local body = game:HttpGet(url)
-                        if body and #body > 500 then
+                        if isValidImageBody(body) then
                             writefile(fileName, body)
                             assetPath = getasset(fileName)
                             success = true
@@ -368,7 +383,7 @@ local function saveConfig()
 end
 
 -- ==========================================
--- SISTEMA DE NUBE FORCE-SHIELD + ESTRELLA NEÓN + RAYO CÓSMICO + SEPARACIÓN
+-- SISTEMA DE NUBE FORCE-SHIELD + ESTRELLA Y RAYA LIMPIAS + SEPARACIÓN
 -- ==========================================
 local activeBillboards = {}
 local activeCaptionLoops = {}
@@ -604,6 +619,7 @@ local function getBillboard(char)
     cloudRoot.Size = UDim2.new(1, 0, 1, 0)
     cloudRoot.Rotation = -3
     cloudRoot.BackgroundTransparency = 1
+    cloudRoot.ClipsDescendants = false
     cloudRoot.Visible = false
     cloudRoot.Parent = bb
 
@@ -918,36 +934,39 @@ local function getBillboard(char)
         Instance.new("UICorner", orbInner).CornerRadius = UDim.new(1, 0)
     end
 
-    -- 5. FIRMA HOLOGRÁFICA SPIDER-VERSE CON ESTRELLA NEÓN GRANDE Y NUEVA RAYA ALINEADA
+    -- 5. FIRMA SPIDER-MAN CON ESTRELLA MÁS GRANDE Y RAYA SIN EFECTOS NI CORTES
     local headerSig = Instance.new("Frame")
     headerSig.Name = "HeaderSignature"
     headerSig.AnchorPoint = Vector2.new(0.5, 0.5)
     headerSig.Position = UDim2.new(0.54, 0, 0.145, 0)
-    headerSig.Size = UDim2.new(0.61, 0, 0.16, 0)
+    headerSig.Size = UDim2.new(0.62, 0, 0.165, 0)
     headerSig.Rotation = -3
     headerSig.BackgroundTransparency = 1
+    headerSig.ClipsDescendants = false
     headerSig.ZIndex = 14
     headerSig.Parent = cloudRoot
 
-    -- Estrella Neón un poquito más grande a la izquierda del nombre
+    -- Foto de la estrella un poquito más grande y 100% limpia (sin efectos ni degradados)
     local starEmblem = Instance.new("ImageLabel")
     starEmblem.Name = "StarEmblem"
     starEmblem.AnchorPoint = Vector2.new(0.5, 0.5)
-    starEmblem.Position = UDim2.new(0.125, 0, 0.43, 0)
-    starEmblem.Size = UDim2.new(0.285, 0, 1.54, 0)
+    starEmblem.Position = UDim2.new(0.115, 0, 0.43, 0)
+    starEmblem.Size = UDim2.new(0.325, 0, 1.76, 0)
     starEmblem.BackgroundTransparency = 1
+    starEmblem.ImageTransparency = 0
+    starEmblem.BorderSizePixel = 0
     starEmblem.Image = ""
     starEmblem.ScaleType = Enum.ScaleType.Fit
     starEmblem.ZIndex = 17
     starEmblem.Parent = headerSig
-    applySafeWebImage(starEmblem, STAR_EMBLEM_URL, "omega_spidey_star_v1.png")
+    applySafeWebImage(starEmblem, STAR_EMBLEM_URL, "omega_spidey_star_v2.png")
 
     -- Tipografía 3D estilo Spider-Verse con aberración cromática
     local nameTextGroup = Instance.new("Frame")
     nameTextGroup.Name = "NameTextGroup"
     nameTextGroup.AnchorPoint = Vector2.new(0, 0.5)
-    nameTextGroup.Position = UDim2.new(0.275, 0, 0.40, 0)
-    nameTextGroup.Size = UDim2.new(0.705, 0, 0.74, 0)
+    nameTextGroup.Position = UDim2.new(0.295, 0, 0.36, 0)
+    nameTextGroup.Size = UDim2.new(0.685, 0, 0.68, 0)
     nameTextGroup.BackgroundTransparency = 1
     nameTextGroup.ZIndex = 15
     nameTextGroup.Parent = headerSig
@@ -1005,49 +1024,24 @@ local function getBillboard(char)
     headerStroke.Color = Color3.fromRGB(10, 20, 46)
     headerStroke.Thickness = 2.2
 
-    -- Nueva raya luminosa debajo del nombre (exactamente del ancho del texto para no sobresalir)
+    -- Foto de la raya 100% limpia (sin efectos, sin capas encima, con Fit para que no la corte y alineada al texto)
     local underlineBeam = Instance.new("ImageLabel")
     underlineBeam.Name = "UnderlineBeam"
-    underlineBeam.AnchorPoint = Vector2.new(0, 0.5)
-    underlineBeam.Position = UDim2.new(0.275, 0, 0.88, 0)
-    underlineBeam.Size = UDim2.new(0.705, 0, 0.72, 0)
+    underlineBeam.AnchorPoint = Vector2.new(0.5, 0.5)
+    underlineBeam.Position = UDim2.new(0.6375, 0, 0.86, 0)
+    underlineBeam.Size = UDim2.new(0.685, 0, 0.85, 0)
     underlineBeam.BackgroundTransparency = 1
+    underlineBeam.ImageTransparency = 0
+    underlineBeam.BorderSizePixel = 0
     underlineBeam.Image = ""
-    underlineBeam.ScaleType = Enum.ScaleType.Stretch
-    underlineBeam.ZIndex = 15
+    underlineBeam.ScaleType = Enum.ScaleType.Fit
+    underlineBeam.ZIndex = 16
     underlineBeam.Parent = headerSig
-    applySafeWebImage(underlineBeam, ENERGY_BEAM_URL, "omega_spidey_beam_v2.png")
-
-    -- Capa superior de brillo que recorre la nueva raya
-    local underlineBeamCore = Instance.new("ImageLabel")
-    underlineBeamCore.Name = "UnderlineBeamCore"
-    underlineBeamCore.Size = UDim2.new(1, 0, 1, 0)
-    underlineBeamCore.BackgroundTransparency = 1
-    underlineBeamCore.Image = ""
-    underlineBeamCore.ScaleType = Enum.ScaleType.Stretch
-    underlineBeamCore.ZIndex = 16
-    underlineBeamCore.Parent = underlineBeam
-    applySafeWebImage(underlineBeamCore, ENERGY_BEAM_URL, "omega_spidey_beam_v2.png")
-
-    local beamIllumGrad = Instance.new("UIGradient", underlineBeamCore)
-    beamIllumGrad.Name = "BeamIllumGrad"
-    beamIllumGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(205, 245, 255)),
-        ColorSequenceKeypoint.new(0.45, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(0.75, Color3.fromRGB(230, 250, 255)),
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(235, 210, 255))
-    })
-    beamIllumGrad.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0.00, 0.20),
-        NumberSequenceKeypoint.new(0.35, 0.00),
-        NumberSequenceKeypoint.new(0.50, 0.00),
-        NumberSequenceKeypoint.new(0.65, 0.00),
-        NumberSequenceKeypoint.new(1.00, 0.18)
-    })
+    applySafeWebImage(underlineBeam, ENERGY_BEAM_URL, "omega_spidey_beam_v3.png")
 
     applyInnerColorToLayer(innerLayer)
 
-    -- 6. CAPA DE DESTELLO INICIAL DE SEPARACIÓN (SIN LÍNEAS ROJAS NI BARRAS SEPARADAS)
+    -- 6. CAPA DE DESTELLO INICIAL DE SEPARACIÓN
     local breachLayer = Instance.new("Frame")
     breachLayer.Name = "EnergyBreachLayer"
     breachLayer.Size = UDim2.new(1, 0, 1, 0)
@@ -1297,7 +1291,7 @@ local function startCaptionEffectsLoop(char, sessionId, vfxType, isSong, isSadDe
 
             local elapsed = tick() - startTime
 
-            -- 1. Animación de la Estrella Neón Grande y de la Nueva Raya de Energía
+            -- 1. Movimientos de la estrella y del texto (sin efectos encima de las imágenes)
             local headerSig = cloudRoot:FindFirstChild("HeaderSignature")
             local starEmblem = headerSig and headerSig:FindFirstChild("StarEmblem")
             local nameTextGroup = headerSig and headerSig:FindFirstChild("NameTextGroup")
@@ -1305,15 +1299,11 @@ local function startCaptionEffectsLoop(char, sessionId, vfxType, isSong, isSadDe
             local shadowRed = nameTextGroup and nameTextGroup:FindFirstChild("ShadowRed")
             local headerLbl = nameTextGroup and nameTextGroup:FindFirstChild("HeaderLbl")
             local headerGrad = headerLbl and headerLbl:FindFirstChild("HeaderGrad")
-            local underlineBeam = headerSig and headerSig:FindFirstChild("UnderlineBeam")
-            local underlineBeamCore = underlineBeam and underlineBeam:FindFirstChild("UnderlineBeamCore")
-            local beamIllumGrad = underlineBeamCore and underlineBeamCore:FindFirstChild("BeamIllumGrad")
 
             if starEmblem then
                 starEmblem.Rotation = (elapsed * 32) % 360
                 local starPulse = 1 + math.sin(elapsed * 3.4) * 0.07
-                starEmblem.Size = UDim2.new(0.285 * starPulse, 0, 1.54 * starPulse, 0)
-                starEmblem.ImageTransparency = 0.0 + math.abs(math.cos(elapsed * 3.0)) * 0.08
+                starEmblem.Size = UDim2.new(0.325 * starPulse, 0, 1.76 * starPulse, 0)
             end
 
             if shadowCyan and shadowRed then
@@ -1324,17 +1314,6 @@ local function startCaptionEffectsLoop(char, sessionId, vfxType, isSong, isSadDe
 
             if headerGrad then
                 headerGrad.Offset = Vector2.new(math.sin(elapsed * 2.1) * 0.70, 0)
-            end
-
-            if underlineBeam then
-                local pulseWave = (math.sin(elapsed * 2.8) + 1) * 0.5
-                underlineBeam.ImageTransparency = 0.0
-                if underlineBeamCore then
-                    underlineBeamCore.ImageTransparency = 0.04 + (1 - pulseWave) * 0.14
-                end
-                if beamIllumGrad then
-                    beamIllumGrad.Offset = Vector2.new(-0.55 + pulseWave * 1.10, 0)
-                end
             end
 
             local safeTextZone = cloudRoot:FindFirstChild("SafeTextZone")
